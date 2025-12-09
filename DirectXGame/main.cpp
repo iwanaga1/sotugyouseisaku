@@ -11,6 +11,10 @@ uint32_t textureEnemy_ = 0;
 
 uint32_t textureBullet_ = 0;
 
+uint32_t textureNumber_ = 0;
+
+uint32_t textureHaikei_ = 0;
+
 // スプライト
 KamataEngine::Sprite* sprite_ = nullptr;
 
@@ -18,6 +22,8 @@ KamataEngine::Sprite* spriteFont_[100] = {};
 KamataEngine::Sprite* spriteCommand_[100] = {};
 KamataEngine::Sprite* spriteEnemy_ = nullptr;
 KamataEngine::Sprite* spriteBullet_ = nullptr;
+KamataEngine::Sprite* spriteScore_[5] = {};
+KamataEngine::Sprite* spriteHaikei_ = nullptr;
 
 // 構造体
 struct Bullet {
@@ -29,8 +35,23 @@ struct Enemy {
 	bool isAlive;
 };
 
+void Drawscore(int number)
+{
+	int32_t digit = 10000;
+	for (int i = 0; i < 5; i++)
+	{
+		int nowNumber = number / digit;
+		spriteScore_[i]->SetTextureRect({32.0f * nowNumber, 0}, {32, 64});
+		number %= digit;
+		digit /= 10;
+	}
+	for (int i = 0; i < 5; i++) {
+		/*spriteScore_[i]->SetTextureRect({0, 0}, {32, 64});*/
+		spriteScore_[i]->Draw();
+	}
 
-// Windowsアプリでのエントリーポイント(main関数)
+}
+    // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// エンジンの初期化
@@ -45,10 +66,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	textureEnemy_ = TextureManager::Load("MonsterEN.png");
 
 	textureBullet_ = TextureManager::Load("bullet1.png");
+
+	textureNumber_ = TextureManager::Load("number.png");
+
+	textureHaikei_ = TextureManager::Load("haikei.png");
+
 	// スプライトインスタンスの生成
 	sprite_ = Sprite::Create(textureHandle_, {100, 10});
 	spriteBullet_ = Sprite::Create(textureBullet_, {0, 0});
 	spriteEnemy_ = Sprite::Create(textureEnemy_, {800, 400});
+	spriteHaikei_ = Sprite::Create(textureHaikei_, {0, 0});
 
 	for (int i = 0; i < 100; i++) {
 		spriteFont_[i] = Sprite::Create(textureHandle_, {100.0f + i * 32, 200});
@@ -58,8 +85,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		spriteCommand_[i] = Sprite::Create(textureHandle_, {100.0f + i * 32, 100});
 		spriteCommand_[i]->SetSize({32, 32});
 	}
+	for (int i = 0; i < 5; i++) {
+		spriteScore_[i] = Sprite::Create(textureNumber_, {100.0f + i * 32, 300});
+		spriteScore_[i]->SetSize({32, 64});
+	}
 	// --- ゲーム状態 ---
-	std::string commands[] = {"aaaaa", "bbbbbbb", "hit", "run", "shot", "zap"}; // 短く簡単
+	std::string commands[] = {"snap", "gun", "hit", "run", "shot", "zap"}; // 短く簡単
 	std::string currentCommand = "";
 	std::string inputText = "";
 	Bullet bullet = {0, 0, false};
@@ -266,6 +297,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 		// スプライト描画前処理
 		Sprite::PreDraw();
+
+		//背景
+		spriteHaikei_->Draw();
 		// 弾描画
 		if (bullet.isAlive) {
 			/*Novice::DrawEllipse((int)bullet.x, (int)bullet.y, 10, 10, 0.0f, 0xFFAA00FF, kFillModeSolid);*/
@@ -279,30 +313,38 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		sprite_->Draw();
 
 		// 文字列を描画する
-		int i = 0;
-		while (inputText[i] != '\0') {
-			/*int x = msg[i] - 'A';*/ // 　文字を数値に変換
-			int x = inputText[i] - 'a';//文字を数値に変換
-			x = x * 32;           // 幅を掛ける
-			spriteFont_[i]->SetTextureRect({(float)x, 0}, {32, 32});
+		{
+			int i = 0;
+			while (inputText[i] != '\0') {
+				/*int x = msg[i] - 'A';*/   // 　文字を数値に変換
+				int x = inputText[i] - 'a'; // 文字を数値に変換
+				x = x * 32;                 // 幅を掛ける
+				spriteFont_[i]->SetTextureRect({(float)x, 0}, {32, 32});
 
-			spriteFont_[i]->Draw();
+				spriteFont_[i]->Draw();
 
-			i++;
+				i++;
+			}
+			// コマンド表示
+			i = 0;
+			while (currentCommand[i] != '\0') {
+				/*int x = msg[i] - 'A';*/        // 　文字を数値に変換
+				int x = currentCommand[i] - 'a'; // 文字を数値に変換
+
+				x = x * 32; // 幅を掛ける
+				spriteCommand_[i]->SetTextureRect({(float)x, 0}, {32, 32});
+
+				spriteCommand_[i]->Draw();
+
+				i++;
+			}
 		}
-		//コマンド表示
-		 i = 0;
-		while (currentCommand[i] != '\0') {
-			/*int x = msg[i] - 'A';*/   // 　文字を数値に変換
-			int x = currentCommand[i] - 'a'; // 文字を数値に変換
-			
-			x = x * 32;                 // 幅を掛ける
-			spriteCommand_[i]->SetTextureRect({(float)x, 0}, {32, 32});
-
-			spriteCommand_[i]->Draw();
-
-			i++;
-		}
+		Drawscore(score);
+		
+		/*for (int i = 0; i < 5; i++) {
+			spriteScore_[i] = Sprite::Create(textureHandle_, {100.0f + i * 32, 100});
+			spriteScore_[i]->SetSize({32, 32});
+		}*/
 		// スプライト描画後処理
 		Sprite::PostDraw();
 
@@ -320,7 +362,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	}
 	delete spriteBullet_;
 	delete spriteEnemy_;
-
+	delete spriteHaikei_;
 	// エンジンの終了処理
 	KamataEngine::Finalize();
 
