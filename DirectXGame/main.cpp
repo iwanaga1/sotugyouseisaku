@@ -15,6 +15,8 @@ uint32_t textureNumber_ = 0;
 
 uint32_t textureHaikei_ = 0;
 
+uint32_t textureDamage_ = 0;
+
 // スプライト
 KamataEngine::Sprite* sprite_ = nullptr;
 
@@ -24,6 +26,8 @@ KamataEngine::Sprite* spriteEnemy_ = nullptr;
 KamataEngine::Sprite* spriteBullet_ = nullptr;
 KamataEngine::Sprite* spriteScore_[5] = {};
 KamataEngine::Sprite* spriteHaikei_ = nullptr;
+KamataEngine::Sprite* spriteHitPoint_[5] = {};
+KamataEngine::Sprite* spriteDamage_ = nullptr;
 
 // 構造体
 struct Bullet {
@@ -71,11 +75,14 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	textureHaikei_ = TextureManager::Load("haikei.png");
 
+	textureDamage_ = TextureManager::Load("damage.png");
+
 	// スプライトインスタンスの生成
 	sprite_ = Sprite::Create(textureHandle_, {100, 10});
 	spriteBullet_ = Sprite::Create(textureBullet_, {0, 0});
 	spriteEnemy_ = Sprite::Create(textureEnemy_, {800, 400});
 	spriteHaikei_ = Sprite::Create(textureHaikei_, {0, 0});
+	spriteDamage_ = Sprite::Create(textureDamage_, {100, 500});
 
 	for (int i = 0; i < 100; i++) {
 		spriteFont_[i] = Sprite::Create(textureHandle_, {100.0f + i * 32, 200});
@@ -86,8 +93,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		spriteCommand_[i]->SetSize({32, 32});
 	}
 	for (int i = 0; i < 5; i++) {
-		spriteScore_[i] = Sprite::Create(textureNumber_, {100.0f + i * 32, 300});
+		spriteScore_[i] = Sprite::Create(textureNumber_, {100.0f + i * 32, 10});
 		spriteScore_[i]->SetSize({32, 64});
+	}
+	for (int i = 0; i < 5; i++) {
+		spriteHitPoint_[i] = Sprite::Create(textureBullet_, {500.0f + i * 40, 10});
 	}
 	// --- ゲーム状態 ---
 	std::string commands[] = {"snap", "gun", "hit", "run", "shot", "zap"}; // 短く簡単
@@ -99,9 +109,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	float limitTime = 180.0f; // 約3秒
 	bool commandActive = false;
 	bool success = false;
+	bool damageFlag = false;
+	int damageTimer = 0;
 	int score = 0;
-	int life = 3;
+	int life = 5;
 	int level = 1;
+	
 
 	//今までにキーを押したか？
 	bool inputPush = false;
@@ -169,7 +182,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		if (Input::GetInstance()->PushKey(DIK_Y))inputKey += 'y';
 		if (Input::GetInstance()->PushKey(DIK_Z))inputKey += 'z';
 		//Enterで判定
-		if (Input::GetInstance()->PushKey(DIK_RETURN)  && commandActive) {
+		if (Input::GetInstance()->TriggerKey(DIK_RETURN)  && commandActive) {
 		    if (inputText == currentCommand) {
 		    		bullet = {100.0f, 360.0f, true};
 		    	success = true;
@@ -269,6 +282,15 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			if (enemy.x < 0) {
 				enemy.isAlive = false;
 				life--;
+				damageFlag = true;
+				damageTimer = 50;
+			}
+		}
+		//一定時間でダメージの表示を消す
+		if (damageFlag == true) {
+			damageTimer -= 1;
+			if (damageTimer <= 0) {
+				damageFlag = false;
 			}
 		}
 		// 当たり判定
@@ -310,8 +332,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			/*Novice::DrawBox((int)enemy.x - 15, (int)enemy.y - 15, 30, 30, 0.0f, 0xFF3333FF, kFillModeSolid);*/
 			spriteEnemy_->Draw();
 		}
-		sprite_->Draw();
-
+		/*sprite_->Draw();*/
+		//ダメージ
+		if (damageFlag) spriteDamage_->Draw();
 		// 文字列を描画する
 		{
 			int i = 0;
@@ -340,7 +363,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 			}
 		}
 		Drawscore(score);
-		
+		for (int i = 0; i < life; i++) {
+			spriteHitPoint_[i]->Draw();
+		}
 		/*for (int i = 0; i < 5; i++) {
 			spriteScore_[i] = Sprite::Create(textureHandle_, {100.0f + i * 32, 100});
 			spriteScore_[i]->SetSize({32, 32});
@@ -360,9 +385,13 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	for (int i = 0; i < 100; i++) {
 		delete spriteCommand_[i];
 	}
+	for (int i = 0; i < 5; i++) {
+		delete spriteHitPoint_[i];
+	}
 	delete spriteBullet_;
 	delete spriteEnemy_;
 	delete spriteHaikei_;
+	delete spriteDamage_;
 	// エンジンの終了処理
 	KamataEngine::Finalize();
 
